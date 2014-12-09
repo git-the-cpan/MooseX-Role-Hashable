@@ -21,10 +21,11 @@ requires:
   ExtUtils::MakeMaker: 0
   ExtUtils::MakeMaker::CPANfile: 0
   Moose: 0
+  Scalar::Util: 0
   Test::Most: 0
   namespace::autoclean: 0
 resources:
   bugtracker: http://github.com/aarondcohen/perl-moosex-role-hashable/issues
   homepage: http://github.com/aarondcohen/perl-moosex-role-hashable
   repository: git://github.com/aarondcohen/perl-moosex-role-hashable.git
-version: 1.01
+version: 1.02
