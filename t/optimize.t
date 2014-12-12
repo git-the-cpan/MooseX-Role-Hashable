@@ -14,6 +14,7 @@ use Test::Most tests => 7;
 	with 'MooseX::Role::Hashable';
 	has bar1 => (is => 'rw', default => 23);
 	has bar2 => (is => 'rw', lazy => 1, builder => '_build_bar2');
+	has bar5 => (is => 'rw');
 	sub _build_bar2 { 46 }
 }
 {
@@ -21,12 +22,14 @@ use Test::Most tests => 7;
 	use Moose;
 	extends 'Foo::Modified';
 	has bar4 => (is => 'rw', default => 92);
+	has '+bar5' => (default => 118);
 }
 {
 	package Foo::Modified::OptimizedChild;
 	use Moose;
 	extends 'Foo::Modified';
 	has bar4 => (is => 'rw', default => 92);
+	has '+bar5' => (default => 118);
 	__PACKAGE__->meta->make_immutable;
 }
 {
@@ -42,6 +45,7 @@ use Test::Most tests => 7;
 	has bar1 => (is => 'rw', default => 23);
 	has bar2 => (is => 'rw', lazy => 1, builder => '_build_bar2');
 	has bar3 => (is => 'rw', lazy => 1, default => 69);
+	has bar5 => (is => 'rw');
 	sub _build_bar2 { 46 }
 }
 {
@@ -49,12 +53,14 @@ use Test::Most tests => 7;
 	use Moose;
 	extends 'Foo::Normal';
 	has bar4 => (is => 'rw', default => 92);
+	has '+bar5' => (default => 118);
 }
 {
 	package Foo::Normal::OptimizedChild;
 	use Moose;
 	extends 'Foo::Normal';
 	has bar4 => (is => 'rw', default => 92);
+	has '+bar5' => (default => 118);
 	__PACKAGE__->meta->make_immutable;
 }
 
@@ -65,6 +71,7 @@ use Test::Most tests => 7;
 	has bar1 => (is => 'rw', default => 23);
 	has bar2 => (is => 'rw', lazy => 1, builder => '_build_bar2');
 	has bar3 => (is => 'rw', lazy => 1, default => 69);
+	has bar5 => (is => 'rw');
 	sub _build_bar2 { 46 }
 
 	__PACKAGE__->meta->make_immutable;
@@ -74,6 +81,7 @@ use Test::Most tests => 7;
 	use Moose;
 	extends 'Foo::Optimized';
 	has bar4 => (is => 'rw', default => 92);
+	has '+bar5' => (default => 118);
 	__PACKAGE__->meta->make_immutable;
 }
 {
@@ -81,6 +89,7 @@ use Test::Most tests => 7;
 	use Moose;
 	extends 'Foo::Optimized';
 	has bar4 => (is => 'rw', default => 92);
+	has '+bar5' => (default => 118);
 }
 
 my $foo_modified = Foo::Modified->new;

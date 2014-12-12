@@ -1,4 +1,11 @@
-use lib 'lib/';
+#!/usr/bin/env perl
+
+use strict;
+use warnings qw(all);
+
+use FindBin ();
+use lib "$FindBin::Bin/../lib/";
+
 use Benchmark qw{cmpthese};
 use Test::Most;
 
@@ -71,11 +78,9 @@ my $_as_hash_safe = sub {
 
 	__PACKAGE__->meta->make_immutable;
 }
+
 my @possible_attrs = grep { ! ($_->is_required || ! $_->is_lazy && ($_->has_builder || $_->has_default))  } Foo->meta->get_all_attributes;
 
-#use Data::Dumper;
-#warn Dumper(Foo->new);
-#warn Dumper(map { $_->name } @possible_attrs);
 is_deeply $_as_hash_diff_v1->(Foo->new), $_as_hash_safe->(Foo->new);
 is_deeply $_as_hash_diff_v2->(Foo->new), $_as_hash_safe->(Foo->new);
 is_deeply $_as_hash_diff_v3->(Foo->new), $_as_hash_safe->(Foo->new);

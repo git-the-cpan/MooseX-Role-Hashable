@@ -2,7 +2,7 @@ package MooseX::Role::Hashable;
 
 =head1 NAME
 
-MooseX::Role::Hashable - transform the object into a hash
+MooseX::Role::Hashable - Transform the object into a hash
 
 =cut
 
@@ -10,15 +10,16 @@ use strict;
 use warnings;
 
 use Moose::Role;
+use Set::Functional qw{setify_by};
 use namespace::autoclean;
 
 =head1 VERSION
 
-Version 1.02
+Version 1.03
 
 =cut
 
-our $VERSION = '1.02';
+our $VERSION = '1.03';
 
 =head1 SYNOPSIS
 
@@ -47,28 +48,27 @@ Example usage:
 =cut
 
 do {
-	my $moose_meta = Moose::Meta::Class->meta;
-	my $modify_immutable = $moose_meta->is_immutable;
+	my $package = __PACKAGE__;
+	package
+		Moose::Meta::Class;
 
-	$moose_meta->make_mutable if $modify_immutable;
+	use Class::Method::Modifiers ();
 
-	$moose_meta->add_after_method_modifier('make_immutable', sub {
+	Class::Method::Modifiers::after(make_immutable => sub {
 		my $meta = shift;
 		my $class = $meta->name;
 		$class->optimize_as_hash
 			if $class->can('does')
-			&& $class->does(__PACKAGE__);
+			&& $class->does($package);
 	});
 
-	$moose_meta->add_after_method_modifier('make_mutable', sub {
+	Class::Method::Modifiers::before(make_mutable => sub {
 		my $meta = shift;
 		my $class = $meta->name;
 		$class->deoptimize_as_hash
 			if $class->can('does')
-			&& $class->does(__PACKAGE__);
+			&& $class->does($package);
 	});
-
-	$moose_meta->make_immutable if $modify_immutable;
 };
 
 =head1 METHODS
@@ -83,18 +83,18 @@ as_hash will perform a shallow copy.
 
 =cut
 
-my %CLASS_TO_POSSIBLE_ATTRIBUTES;
+my %CLASS_TO_UNINITIALIZED_ATTRIBUTES;
 
 sub as_hash {
 	my $self = shift;
 
-	my @possible_attributes = exists $CLASS_TO_POSSIBLE_ATTRIBUTES{ref $self}
-		? @{$CLASS_TO_POSSIBLE_ATTRIBUTES{ref $self}}
-		: $self->meta->get_all_attributes;
+	my $uninitialized_attributes = exists $CLASS_TO_UNINITIALIZED_ATTRIBUTES{ref $self}
+		? $CLASS_TO_UNINITIALIZED_ATTRIBUTES{ref $self}
+		: [$self->meta->get_all_attributes];
 
 	my %copy = %$self;
-	my @missing_attributes = grep { ! exists $copy{$_->name} } @possible_attributes;
-	$copy{$_->name} = $_->get_value($self) for @missing_attributes;
+	$copy{$_->name} = $_->get_value($self)
+		for grep { ! exists $copy{$_->name} } @$uninitialized_attributes;
 
 	return \%copy;
 }
@@ -102,18 +102,18 @@ sub as_hash {
 sub optimize_as_hash {
 	my $class = shift;
 
-	@{$CLASS_TO_POSSIBLE_ATTRIBUTES{$class}} = grep {
-		! ($_->is_required || ! $_->is_lazy && ($_->has_builder || $_->has_default))
-	} $class->meta->get_all_attributes;
+	@{$CLASS_TO_UNINITIALIZED_ATTRIBUTES{$class}} =
+		#Find all fields that aren't guaranteed to exist
+		grep { ! ($_->is_required || ! $_->is_lazy && ($_->has_builder || $_->has_default)) }
+		#We only want one copy of each attribute
+		setify_by { $_->name }
+		#Manually taverse all attributes, get_all_attributes doesn't update
+		#with superclass changes afte subclass immutability
+		map { my $meta = $_->meta; map { $meta->get_attribute($_) } $meta->get_attribute_list }
+		#Make sure attribute overrides take precedence
+		reverse $class->meta->linearized_isa;
 
-	for ($class->meta->direct_subclasses) {
-		if ($class->meta->is_immutable) {
-			$_->meta->make_mutable;
-			$_->meta->make_immutable;
-		} else {
-			$_->optimize_as_hash;
-		}
-	}
+	$_->optimize_as_hash for $class->meta->direct_subclasses;
 
 	return;
 }
@@ -121,7 +121,7 @@ sub optimize_as_hash {
 sub deoptimize_as_hash {
 	my $class = shift;
 
-	delete $CLASS_TO_POSSIBLE_ATTRIBUTES{$class};
+	delete $CLASS_TO_UNINITIALIZED_ATTRIBUTES{$class};
 	$_->deoptimize_as_hash for $class->meta->direct_subclasses;
 
 	return;
