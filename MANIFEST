@@ -1,4 +1,5 @@
-benchmark/as_hash.pl
+benchmark/as_hash-implementation.pl
+benchmark/as_hash-optimization.pl
 cpanfile
 lib/MooseX/Role/Hashable.pm
 Makefile.PL

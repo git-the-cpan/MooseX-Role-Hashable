@@ -30,4 +30,4 @@ resources:
   bugtracker: http://github.com/aarondcohen/perl-moosex-role-hashable/issues
   homepage: http://github.com/aarondcohen/perl-moosex-role-hashable
   repository: git://github.com/aarondcohen/perl-moosex-role-hashable.git
-version: 1.03
+version: 1.04
